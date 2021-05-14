@@ -18,17 +18,21 @@ import json
 # Switch between testnet and mainnet
 # Setting this to False will use REAL funds, use at your own risk
 # Define your API keys below in order for the toggle to work
-TESTNET = True
+TESTNET = False
 
 
 # Get binance key and secret for TEST and MAINNET
 # The keys below are pulled from environment variables using os.getenv
 # Simply remove this and use the following format instead: api_key_test = 'YOUR_API_KEY'
+api_key = {
+}
 api_key_test = os.getenv('binance_api_stalkbot_testnet')
 api_secret_test = os.getenv('binance_secret_stalkbot_testnet')
 
-api_key_live = os.getenv('binance_api_stalkbot_live')
-api_secret_live = os.getenv('binance_secret_stalkbot_live')
+# api_key_live = os.getenv('binance_api_stalkbot_live')
+# api_secret_live = os.getenv('binance_secret_stalkbot_live')
+api_key_live = api_key.get("apiKey")
+api_secret_live = api_key.get("secretKey")
 
 
 # Authenticate with the client
@@ -42,8 +46,6 @@ else:
     client = Client(api_key_live, api_secret_live)
 
 
-
-
 ####################################################
 #                   USER INPUTS                    #
 # You may edit to adjust the parameters of the bot #
@@ -54,7 +56,7 @@ else:
 PAIR_WITH = 'USDT'
 
 # Define the size of each trade, by default in USDT
-QUANTITY = 100
+QUANTITY = 22
 
 # List of pairs to exlcude
 # by default we're excluding the most popular fiat pairs
@@ -62,10 +64,10 @@ QUANTITY = 100
 FIATS = ['EURUSDT', 'GBPUSDT', 'JPYUSDT', 'USDUSDT', 'DOWN', 'UP']
 
 # the amount of time in MINUTES to calculate the differnce from the current price
-TIME_DIFFERENCE = 5
+TIME_DIFFERENCE = 7
 
 # the difference in % between the first and second checks for the price, by default set at 10 minutes apart.
-CHANGE_IN_PRICE = 3
+CHANGE_IN_PRICE = 2.4
 
 # define in % when to sell a coin that's not making a profit
 STOP_LOSS = 3
@@ -76,7 +78,7 @@ TAKE_PROFIT = 6
 # use custom tickers.txt list for filtering pairs
 CUSTOM_LIST = False
 
-#Use log file for trades
+# Use log file for trades
 LOG_TRADES = True
 LOG_FILE = 'trades.txt'
 
@@ -86,10 +88,9 @@ LOG_FILE = 'trades.txt'
 ####################################################
 
 
-
-
 # Load custom tickerlist from file tickers.txt into array tickers *BNB must be in list for script to run.
-if CUSTOM_LIST: tickers=[line.strip() for line in open('tickers.txt')]
+if CUSTOM_LIST:
+    tickers = [line.strip() for line in open('tickers.txt')]
 
 
 # try to load all the coins bought by the bot if the file exists and is not empty
@@ -103,9 +104,9 @@ if TESTNET:
     coins_bought_file_path = 'testnet_' + coins_bought_file_path
 
 # if saved coins_bought json file exists and it's not empty then load it
-if os.path.isfile(coins_bought_file_path) and os.stat(coins_bought_file_path).st_size!= 0:
+if os.path.isfile(coins_bought_file_path) and os.stat(coins_bought_file_path).st_size != 0:
     with open(coins_bought_file_path) as file:
-            coins_bought = json.load(file)
+        coins_bought = json.load(file)
 
 
 def get_price():
@@ -115,13 +116,15 @@ def get_price():
     prices = client.get_all_tickers()
 
     for coin in prices:
-       
+
         if CUSTOM_LIST:
             if PAIR_WITH in coin['symbol'] and any(item in coin['symbol'] for item in tickers) and all(item not in coin['symbol'] for item in FIATS):
-                initial_price[coin['symbol']] = { 'price': coin['price'], 'time': datetime.now()}
+                initial_price[coin['symbol']] = {
+                    'price': coin['price'], 'time': datetime.now()}
         else:
             if PAIR_WITH in coin['symbol'] and all(item not in coin['symbol'] for item in FIATS):
-                initial_price[coin['symbol']] = { 'price': coin['price'], 'time': datetime.now()}
+                initial_price[coin['symbol']] = {
+                    'price': coin['price'], 'time': datetime.now()}
 
     return initial_price
 
@@ -145,10 +148,11 @@ def wait_for_price():
         infoCoin = 'none'
         infoStart = 0.00
         infoStop = 0.00
-        
+
         # calculate the difference between the first and last price reads
         for coin in initial_price:
-            threshold_check = (float(last_price[coin]['price']) - float(initial_price[coin]['price'])) / float(initial_price[coin]['price']) * 100
+            threshold_check = (float(last_price[coin]['price']) - float(
+                initial_price[coin]['price'])) / float(initial_price[coin]['price']) * 100
 
             if threshold_check > infoChange:
                 infoChange = threshold_check
@@ -161,13 +165,16 @@ def wait_for_price():
                 volatile_coins[coin] = threshold_check
                 volatile_coins[coin] = round(volatile_coins[coin], 3)
 
-                print(f'{coin} has gained {volatile_coins[coin]}% in the last {TIME_DIFFERENCE} minutes, calculating volume in {PAIR_WITH}')
-         
+                print(
+                    f'{coin} has gained {volatile_coins[coin]}% in the last {TIME_DIFFERENCE} minutes, calculating volume in {PAIR_WITH}')
+
         # Print more info if there are no volatile coins this iteration
         if len(volatile_coins) < 1:
-                print(f'No coins moved more than {CHANGE_IN_PRICE}% in the last {TIME_DIFFERENCE} minute(s)')
-                print(f'Max movement {float(infoChange):.2f}% by {infoCoin} from {float(infoStart):.4f} to {float(infoStop):.4f}')
-                
+            print(
+                f'No coins moved more than {CHANGE_IN_PRICE}% in the last {TIME_DIFFERENCE} minute(s)')
+            print(
+                f'Max movement {float(infoChange):.2f}% by {infoCoin} from {float(infoStart):.8f} to {float(infoStop):.8f}')
+
         return volatile_coins, len(volatile_coins), last_price
 
 
@@ -206,7 +213,8 @@ def convert_volume():
             if lot_size[coin] == 0:
                 volume[coin] = int(volume[coin])
             else:
-                volume[coin] = float('{:.{}f}'.format(volume[coin], lot_size[coin]))
+                volume[coin] = float('{:.{}f}'.format(
+                    volume[coin], lot_size[coin]))
 
     return volume, last_price
 
@@ -223,17 +231,18 @@ def buy():
         if coin not in coins_bought:
             print(f' preparing to buy {volume[coin]} {coin}')
 
-            if TESTNET :
+            if TESTNET:
                 # create test order before pushing an actual order
-                test_order = client.create_test_order(symbol=coin, side='BUY', type='MARKET', quantity=volume[coin])
+                test_order = client.create_test_order(
+                    symbol=coin, side='BUY', type='MARKET', quantity=volume[coin])
 
             # try to create a real order if the test orders did not raise an exception
             try:
                 buy_limit = client.create_order(
-                    symbol = coin,
-                    side = 'BUY',
-                    type = 'MARKET',
-                    quantity = volume[coin]
+                    symbol=coin,
+                    side='BUY',
+                    type='MARKET',
+                    quantity=volume[coin]
                 )
 
             # error handling here in case position cannot be placed
@@ -246,18 +255,21 @@ def buy():
 
                 # binance sometimes returns an empty list, the code will wait here unti binance returns the order
                 while orders[coin] == []:
-                    print('Binance is being slow in returning the order, calling the API again...')
+                    print(
+                        'Binance is being slow in returning the order, calling the API again...')
 
                     orders[coin] = client.get_all_orders(symbol=coin, limit=1)
                     time.sleep(1)
 
                 else:
                     print('Order returned, saving order to file')
-                     # Log trade
+                    # Log trade
                     if LOG_TRADES:
-                        write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
+                        write_log(
+                            f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
         else:
-            print(f'Signal detected, but there is already an active trade on {coin}')
+            print(
+                f'Signal detected, but there is already an active trade on {coin}')
 
     return orders, last_price, volume
 
@@ -270,8 +282,10 @@ def sell_coins():
 
     for coin in list(coins_bought):
         # define stop loss and take profit
-        TP = float(coins_bought[coin]['bought_at']) + (float(coins_bought[coin]['bought_at']) * TAKE_PROFIT) / 100
-        SL = float(coins_bought[coin]['bought_at']) - (float(coins_bought[coin]['bought_at']) * STOP_LOSS) / 100
+        TP = float(coins_bought[coin]['bought_at']) + \
+            (float(coins_bought[coin]['bought_at']) * TAKE_PROFIT) / 100
+        SL = float(coins_bought[coin]['bought_at']) - \
+            (float(coins_bought[coin]['bought_at']) * STOP_LOSS) / 100
 
         LastPrice = float(last_price[coin]['price'])
         BuyPrice = float(coins_bought[coin]['bought_at'])
@@ -279,20 +293,34 @@ def sell_coins():
 
         # check that the price is above the take profit or below the stop loss
         if float(last_price[coin]['price']) > TP or float(last_price[coin]['price']) < SL:
-            print(f"TP or SL reached, selling {coins_bought[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} : {PriceChange:.2f}%")
+            print(
+                f"TP or SL reached, selling {coins_bought[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} : {PriceChange:.2f}%")
 
-            if TESTNET :
+            if TESTNET:
                 # create test order before pushing an actual order
-                test_order = client.create_test_order(symbol=coin, side='SELL', type='MARKET', quantity=coins_bought[coin]['volume'])
+                test_order = client.create_test_order(
+                    symbol=coin, side='SELL', type='MARKET', quantity=coins_bought[coin]['volume'])
 
             # try to create a real order if the test orders did not raise an exception
             try:
+                info = client.get_symbol_info(coin)
+                step_size = info['filters'][2]['stepSize']
+                lot_size = step_size.index('1') - 1
+                if lot_size < 0:
+                    lot_size = 0
+
+                sellVolume = coins_bought[coin]['volume'] * 0.99
+                if lot_size == 0:
+                    sellVolume = int(sellVolume)
+                else:
+                    sellVolume = float('{:.{}f}'.format(
+                        sellVolume, lot_size))
 
                 sell_coins_limit = client.create_order(
-                    symbol = coin,
-                    side = 'SELL',
-                    type = 'MARKET',
-                    quantity = coins_bought[coin]['volume']
+                    symbol=coin,
+                    side='SELL',
+                    type='MARKET',
+                    quantity=sellVolume
 
                 )
 
@@ -303,11 +331,14 @@ def sell_coins():
             # run the else block if coin has been sold and create a dict for each coin sold
             else:
                 coins_sold[coin] = coins_bought[coin]
+                profit = sellVolume * LastPrice - coins_bought[coin]['volume'] * BuyPrice
                 # Log trade
                 if LOG_TRADES:
-                    write_log(f"Sell: {coins_sold[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} : {PriceChange:.2f}%")
+                    write_log(
+                        f"Sell: {coins_sold[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} : {PriceChange:.2f}% Profit: {profit}")
         else:
-            print(f'TP or SL not yet reached, not selling {coin} for now {BuyPrice} - {LastPrice} : {PriceChange:.2f}% ')
+            print(
+                f'TP or SL not yet reached, not selling {coin} for now {BuyPrice} - {LastPrice} : {PriceChange:.2f}% ')
 
     return coins_sold
 
@@ -323,13 +354,15 @@ def update_porfolio(orders, last_price, volume):
             'timestamp': orders[coin][0]['time'],
             'bought_at': last_price[coin]['price'],
             'volume': volume[coin]
-            }
+        }
 
         # save the coins in a json file in the same directory
         with open(coins_bought_file_path, 'w') as file:
             json.dump(coins_bought, file, indent=4)
 
-        print(f'Order with id {orders[coin][0]["orderId"]} placed and saved to file')
+        print(
+            f'Order with id {orders[coin][0]["orderId"]} placed and saved to file')
+
 
 def remove_from_portfolio(coins_sold):
     '''Remove coins sold due to SL or TP from portofio'''
@@ -339,9 +372,10 @@ def remove_from_portfolio(coins_sold):
     with open(coins_bought_file_path, 'w') as file:
         json.dump(coins_bought, file, indent=4)
 
+
 def write_log(logline):
     timestamp = datetime.now().strftime("%d/%m %H:%M:%S")
-    with open(LOG_FILE,'a+') as f:
+    with open(LOG_FILE, 'a+') as f:
         f.write(timestamp + ' ' + logline + '\n')
 
 
@@ -349,8 +383,8 @@ if __name__ == '__main__':
     print('Press Ctrl-Q to stop the script')
 
     if not TESTNET:
-        print('WARNING: You are using the Mainnet and live funds. As a safety measure, the script will start executing in 30 seconds.')
-        time.sleep(30)
+        print('WARNING: You are using the Mainnet and live funds. As a safety measure, the script will start executing in 5 seconds.')
+        time.sleep(5)
 
     for i in count():
         orders, last_price, volume = buy()
