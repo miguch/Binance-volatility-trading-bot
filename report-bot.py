@@ -20,7 +20,7 @@ def sendLoop(update, context):
         time.sleep(60 * 7)
         logging.info('send Log data to ' + str(chatId))
         (content, lines) = readLogFile(targetsLines[chatId])
-        if lines > targetLines[chatId]:
+        if lines > targetsLines[chatId]:
             context.bot.send_message(chat_id=chatId, text=content)
             targetsLines[chatId] = lines
 
