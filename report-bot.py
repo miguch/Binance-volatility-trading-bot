@@ -21,8 +21,10 @@ def sendLoop(update, context):
         logging.info('send Log data to ' + str(chatId))
         (content, lines) = readLogFile(targetsLines[chatId])
         if lines > targetsLines[chatId]:
-            context.bot.send_message(chat_id=chatId, text=content)
             targetsLines[chatId] = lines
+            context.bot.send_message(chat_id=chatId, text=content)
+            time.sleep(1)
+            context.bot.send_message(chat_id=chatId, text='record number: '+str(lines))
 
 def executor(update, context):
     try:
@@ -30,6 +32,8 @@ def executor(update, context):
         startLine = float(update.message.text)
         (content, lines) = readLogFile(startLine)
         context.bot.send_message(chat_id=update.effective_chat.id, text=content)
+        time.sleep(1)
+        context.bot.send_message(chat_id=update.effective_chat.id, text='record number: '+str(lines))
         if targetsLines.get(update.effective_chat.id) == None:
             sendThread = Thread(target=sendLoop, args=(update, context))
             sendThread.start()
@@ -46,7 +50,7 @@ def readLogFile(startLine):
             count += 1
             if count >= startLine:
                 result.append(line)
-    return (''.join(result), max(count - startLine + 1, 0))
+    return (''.join(result), max(count + 1, 0))
     
 
 from telegram.ext import CommandHandler
